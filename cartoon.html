@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Anger Buster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1116,13 +1117,14 @@ function toEmbed(raw) {
   let u; try { u = new URL(raw.trim()); } catch (e) { return null; }
   if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
   const h = u.hostname.replace(/^(www|m)\./, ''), id = /^[\w-]+$/;
-  if (h === 'youtu.be') { const v = u.pathname.slice(1).split('/')[0]; if (id.test(v)) return { src: `https://www.youtube.com/embed/${v}?rel=0`, h: 220, name: 'YouTube' }; }
+  const yo = /^https?:$/.test(location.protocol) ? '&origin=' + encodeURIComponent(location.origin) + '&widget_referrer=' + encodeURIComponent(location.href.split('#')[0]) : '';
+  const ytList = l => l && id.test(l) && !/^RD/.test(l) ? '&list=' + l : '';
+  if (h === 'youtu.be') { const v = u.pathname.slice(1).split('/')[0]; if (id.test(v)) return { src: `https://www.youtube.com/embed/${v}?rel=0&playsinline=1${ytList(u.searchParams.get('list'))}${yo}`, h: 220, name: 'YouTube' }; }
   if (h === 'youtube.com' || h === 'music.youtube.com') {
     const list = u.searchParams.get('list'); let v = u.searchParams.get('v');
     if (!v) { const m = u.pathname.match(/^\/(shorts|live|embed)\/([\w-]+)/); if (m) v = m[2]; }
-    const L = list && id.test(list) ? list : '';
-    if (v && id.test(v)) return { src: `https://www.youtube.com/embed/${v}?rel=0${L ? '&list=' + L : ''}`, h: 220, name: 'YouTube' };
-    if (L) return { src: `https://www.youtube.com/embed/videoseries?list=${L}`, h: 220, name: 'YouTube' };
+    if (v && id.test(v)) return { src: `https://www.youtube.com/embed/${v}?rel=0&playsinline=1${ytList(list)}${yo}`, h: 220, name: 'YouTube' };
+    if (list && id.test(list) && !/^RD/.test(list)) return { src: `https://www.youtube.com/embed/videoseries?list=${list}&playsinline=1${yo}`, h: 220, name: 'YouTube' };
   }
   if (h === 'open.spotify.com') { const m = u.pathname.match(/(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]+)/); if (m) return { src: `https://open.spotify.com/embed/${m[1]}/${m[2]}`, h: 152, name: 'Spotify' }; }
   if (h === 'soundcloud.com' || h === 'on.soundcloud.com') return { src: `https://w.soundcloud.com/player/?url=${encodeURIComponent(u.origin + u.pathname)}&color=%23ff5fa2&auto_play=false&visual=false&show_comments=false&hide_related=true`, h: 166, name: 'SoundCloud' };
@@ -1131,6 +1133,7 @@ function toEmbed(raw) {
 }
 function loadEmbed(link) {
   const e = toEmbed(link), msg = $('#linkMsg');
+  if (e && e.name === 'YouTube' && location.protocol === 'file:') { msg.textContent = 'YouTube only plays on the online version of the game (opened from a saved file it shows Error 153). Open https://ashuk032.github.io/anger_buster/cartoon.html, or use Spotify, SoundCloud or Game Beats here.'; return false; }
   if (!e) { msg.textContent = "Hmm, that link didn't work. Try a YouTube, Spotify, SoundCloud or Apple Music song or playlist link."; return false; }
   const box = $('#embedBox'); box.innerHTML = '';
   const f = document.createElement('iframe');
@@ -1140,7 +1143,8 @@ function loadEmbed(link) {
   box.appendChild(f); embedName = e.name;
   $('#musicPanel').scrollTo({ top: 0, behavior: 'smooth' });
   const preview = e.name === 'Spotify' || e.name === 'Apple Music' ? ' (Previews only unless you are signed in.)' : '';
-  msg.textContent = `${e.name} player loaded at the top of this panel. Tap its play button, then close this panel.${preview}`;
+  const ytTip = e.name === 'YouTube' ? ' If YouTube shows Error 153, your browser is blocking the info YouTube needs (often a privacy setting or extension); tap "Watch on YouTube" or try Spotify, SoundCloud or Game Beats.' : '';
+  msg.textContent = `${e.name} player loaded at the top of this panel. Tap its play button, then close this panel.${preview}${ytTip}`;
   store.set('ab_music_link', link.trim());
   if (beats) stopBeats();
   renderMusic(); return true;
