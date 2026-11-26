@@ -20,6 +20,14 @@ button,label{font-family:inherit;touch-action:manipulation}
 .meter .val{font-family:Anton,Impact,sans-serif;font-size:clamp(20px,5vw,26px);letter-spacing:.02em;line-height:1}
 .meter .stats{font-size:12px;color:var(--dim);font-weight:600}
 .track{position:relative;height:8px;margin-top:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.meter{pointer-events:auto}
+.angrier{border:1px solid rgba(255,77,109,.8);border-radius:999px;background:rgba(255,45,85,.22);color:#fff;font:700 13px Inter,sans-serif;padding:4px 11px;cursor:pointer;white-space:nowrap;box-shadow:0 0 14px rgba(255,45,85,.35) inset;touch-action:manipulation}
+.angrier:hover{background:rgba(255,45,85,.38)}
+.angrier:active{transform:scale(.94)}
+.fill.over{background:linear-gradient(90deg,#ff0033,#ff5a00,#ff0033)!important;background-size:200% 100%!important;animation:boil .6s linear infinite;box-shadow:0 0 26px rgba(255,30,30,.95)!important}
+@keyframes boil{to{background-position:200% 0}}
+.meter.over{animation:shakeM .22s linear infinite;border-color:rgba(255,60,60,.6)}
+@keyframes shakeM{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 .fill{position:absolute;inset:0 auto 0 0;width:100%;border-radius:99px;background:linear-gradient(90deg,#ff2d55,#ff8a3d);box-shadow:0 0 18px rgba(255,60,60,.7);transition:width .45s cubic-bezier(.2,1.3,.4,1)}
 
 #toast{position:fixed;left:50%;top:24%;z-index:6;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);opacity:0;
@@ -81,7 +89,7 @@ body.calm .weapons{display:none}
 <div class="hud">
   <div class="meter">
     <div class="row"><span class="lbl">Anger Level</span><span class="stats" id="stats">0 hits</span></div>
-    <div class="row"><span class="val" id="rageText">100% 😂</span><span class="stats" id="combo"></span></div>
+    <div class="row"><span class="val" id="rageText">100% 😂</span><span style="display:flex;gap:8px;align-items:center"><span class="stats" id="combo"></span><button class="angrier" id="angrier" title="Still angry? Raise your Anger Level (+ key)">😡 +10</button></span></div>
     <div class="track"><div class="fill" id="rageFill"></div></div>
   </div>
 </div>
@@ -977,11 +985,13 @@ function guySay(t, d = 1.8) { rag.say = t; rag.sayT = d; }
 let lastLine = '';
 function guyLine(list) { let l; do { l = pick(list); } while (l === lastLine && list.length > 1); lastLine = l; guySay(l); }
 function girlSay(t, d) { girl.say = t; girl.sayT = d; }
-function rageEmoji(r) { return r >= 90 ? '😂' : r >= 70 ? '😤' : r >= 50 ? '😠' : r >= 30 ? '😌' : r > 0 ? '🙂' : '😍'; }
+const MAX_RAGE = 200;
+function rageEmoji(r) { return r > 150 ? '🌋' : r > 100 ? '🤬' : r >= 90 ? '😂' : r >= 70 ? '😤' : r >= 50 ? '😠' : r >= 30 ? '😌' : r > 0 ? '🙂' : '😍'; }
 function updateHUD() {
   $('#rageText').textContent = `${Math.ceil(rage)}% ${rageEmoji(rage)}`;
-  const f = $('#rageFill'); f.style.width = rage + '%';
-  const hue = lerp(140, 350, rage / 100);
+  const f = $('#rageFill'); f.style.width = clamp(rage, 0, 100) + '%';
+  f.classList.toggle('over', rage > 100); $('.meter').classList.toggle('over', rage > 150);
+  const hue = lerp(140, 350, Math.min(1, rage / 100));
   f.style.background = `linear-gradient(90deg,hsl(${hue % 360},90%,55%),hsl(${(hue + 22) % 360},95%,60%))`;
   f.style.boxShadow = `0 0 18px hsla(${hue},90%,55%,.7)`;
   $('#stats').textContent = `${hits} hit${hits === 1 ? '' : 's'} · ${thrown} thrown`;
@@ -990,7 +1000,7 @@ function updateHUD() {
 function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
 const MILESTONES = [[75, 'Take That! 💥'], [50, 'Feeling Better?'], [25, 'Almost there…']];
 function setRage(v) {
-  rage = clamp(v, 0, 100);
+  rage = clamp(v, 0, MAX_RAGE);
   for (const [th, msg] of MILESTONES) if (rage <= th && !crossed.has(th)) { crossed.add(th); toast(msg); }
   updateHUD();
   if (rage <= 0 && !won) win();
@@ -1007,6 +1017,25 @@ function win() {
   }, 3200);
 }
 let bestCombo = 0;
+const ANGRY_AGAIN = ['GRRR!! 😡', "I'm still mad.", 'Ugh, I remembered something 😤', 'Round two. 💢', 'NOT. DONE. YET.'];
+function addAnger(amount = 10) {
+  if (!started) return;
+  audio();
+  const before = rage;
+  rage = Math.min(MAX_RAGE, rage + amount);
+  for (const [th] of MILESTONES) if (rage > th) crossed.delete(th);
+  if (won) { won = false; $('#winModal').classList.add('hidden'); rag.limp = 0; rag.say = ''; rag.sayT = 0; }
+  updateHUD();
+  tone('sawtooth', 110, 65, 0.4, 0.16, 0, 0.2); tone('sine', 70, 45, 0.5, 0.4, 0, 0.1);
+  trauma = Math.min(1, trauma + (rage > 100 ? 0.35 : 0.18));
+  for (let i = 0; i < 6; i++) P('sprite', girlX() + rand(-24, 24) * S, groundY - 214 * S, { spr: pick(SPR.mist), size: rand(18, 30) * S, grow: 2, vx: rand(-40, 40) * S, vy: -rand(90, 150) * S, life: 1.3, alpha: 0.5 });
+  girlSay(pick(ANGRY_AGAIN), 1.4);
+  if (mode === 'play' && Math.random() < 0.6) setTimeout(() => guySay(pick(['Uh oh… 😰', 'Wait, what did I do?!', 'Not again… 😫', 'Gulp. 😬']), 1.6), 350);
+  if (before <= 100 && rage > 100) toast('OVERLOAD 🌋');
+  else if (rage >= MAX_RAGE) toast('MAX RAGE 🌋🔥');
+  else toast(`Anger Level: ${Math.ceil(rage)}% ${rageEmoji(rage)}`);
+  if (mode === 'calm' && rage > 60) setTimeout(() => toast('Still mad? Back to Busting 💣'), 1400);
+}
 function resetGame() {
   rage = 100; thrown = 0; hits = 0; combo = 0; bestCombo = 0; won = false; crossed = new Set();
   parts = []; projs = []; pending = []; lights = []; decals = [];
@@ -1109,7 +1138,7 @@ function update(rdt) {
   // her steam
   if (mode === 'play' && started && rage > 45 && !won) {
     girl.steamT -= dt;
-    if (girl.steamT <= 0) { girl.steamT = lerp(0.45, 0.12, (rage - 45) / 55); P('sprite', girlX() + rand(-18, 18) * S, groundY - 214 * S, { spr: pick(SPR.mist), size: rand(16, 26) * S, grow: 2, vx: rand(-15, 15) * S, vy: -rand(50, 80) * S, life: 1.3, alpha: 0.4 }); }
+    if (girl.steamT <= 0) { girl.steamT = lerp(0.45, rage > 100 ? 0.05 : 0.12, Math.min(1, (rage - 45) / 55)); P('sprite', girlX() + rand(-18, 18) * S, groundY - 214 * S, { spr: pick(SPR.mist), size: rand(16, 26) * S, grow: 2, vx: rand(-15, 15) * S, vy: -rand(50, 80) * S, life: 1.3, alpha: 0.4 }); }
   }
   if (mode === 'calm') {
     if (!won) setRage(rage - dt * 1.5);
@@ -1356,6 +1385,7 @@ addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   const n = parseInt(e.key, 10);
   if (n >= 1 && n <= WEAPONS.length) selectWeapon(WEAPONS[n - 1]);
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); addAnger(); }
   if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); const h = rag.p.chest; throwAt(h.x + rand(-15, 15) * S, h.y + rand(-25, 15) * S); }
 });
 const wbar = $('#weapons');
@@ -1390,6 +1420,7 @@ const openFaces = () => { refreshPreviews(); $('#faceModal').classList.remove('h
 $('#startFaces').addEventListener('click', openFaces);
 $('#facesBtn').addEventListener('click', openFaces);
 $('#againBtn').addEventListener('click', resetGame);
+$('#angrier').addEventListener('click', e => { e.currentTarget.blur(); addAnger(); });
 $('#winCool').addEventListener('click', () => { $('#winModal').classList.add('hidden'); setMode('calm'); });
 
 /* face cropper */
