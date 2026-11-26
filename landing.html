@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Anger Buster: blow off steam, nobody gets hurt</title>
+<meta name="description" content="A free, silly browser game for bad days. Throw bombs, water balloons, pies, rubber chickens and a nuke at a squishy cushion-faced guy until your Anger Level hits 0%.">
+<meta property="og:title" content="Anger Buster 💣😂">
+<meta property="og:description" content="Throw silly stuff until your Anger Level hits 0%. Free, no sign-up, works on your phone.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#ffe9f3">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💣%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2b1d3a;--pink:#ff5fa2;--pink-soft:#ffc6e0;--yellow:#ffd23f;--sky:#9be7ff;--grass:#7ed957;--orange:#ff8c42;
+  --cream:#fff9ef;--bg:#ffe9f3;--dim:#5b4a6e;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 17px/1.55 'Baloo 2',system-ui,sans-serif;overflow-x:hidden}
+a{color:inherit}
+img,canvas{display:block;max-width:100%}
+.wrap{width:100%;max-width:1160px;margin:0 auto;padding:0 20px}
+@media(min-width:768px){.wrap{padding:0 32px}}
+h1,h2,h3{font-weight:800;line-height:1.05;margin:0}
+:focus-visible{outline:3px dashed var(--ink);outline-offset:4px;border-radius:8px}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;border:3px solid var(--ink);padding:6px 12px;border-radius:12px;z-index:100}
+.skip:focus{left:8px}
+
+/* chunky cartoon bits */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 24px;border:3px solid var(--ink);border-radius:999px;
+  background:#fff;color:var(--ink);font:800 18px 'Baloo 2',sans-serif;text-decoration:none;white-space:nowrap;box-shadow:0 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px) rotate(-1deg);box-shadow:0 7px 0 var(--ink)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn-pink{background:var(--pink);color:#fff;-webkit-text-stroke:.6px var(--ink);text-shadow:0 2px 0 var(--ink)}
+.btn-sky{background:var(--sky)}
+.btn-sm{min-height:44px;font-size:16px;padding:0 18px;box-shadow:0 4px 0 var(--ink)}
+.card{background:#fff;border:3px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink)}
+.sticker{display:inline-block;background:var(--yellow);border:3px solid var(--ink);border-radius:999px;padding:2px 14px;font-weight:800;font-size:14px;letter-spacing:.04em;box-shadow:0 3px 0 var(--ink);transform:rotate(-2deg)}
+.pop{color:#fff;-webkit-text-stroke:2.5px var(--ink);paint-order:stroke fill;text-shadow:0 5px 0 var(--ink)}
+
+/* header */
+header{position:sticky;top:0;z-index:20;padding:10px 0;background:rgba(255,233,243,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:3px solid var(--ink)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:6px;text-decoration:none;font-weight:800;font-size:24px;line-height:1}
+.logo b{color:var(--pink);-webkit-text-stroke:1px var(--ink);paint-order:stroke fill}
+.nav ul{display:none;list-style:none;margin:0;padding:0;gap:26px}
+.nav ul a{text-decoration:none;font-weight:700}
+.nav ul a:hover{color:var(--pink)}
+@media(min-width:880px){.nav ul{display:flex}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:44px 0 72px;background:linear-gradient(180deg,#7fd3ff 0%,#bfe8ff 45%,#ffe1f0 100%)}
+.hero::after{content:"";position:absolute;left:-5%;right:-5%;bottom:-2px;height:70px;background:var(--grass);border-top:3px solid var(--ink);border-radius:50% 50% 0 0/100% 100% 0 0}
+.cloud{position:absolute;width:160px;height:56px;background:#fff;border-radius:60px;opacity:.9}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:76px;height:76px;left:26px;top:-36px}
+.cloud::after{width:56px;height:56px;left:84px;top:-22px}
+.c1{top:60px;left:-30px;animation:drift 38s linear infinite}
+.c2{top:150px;right:6%;transform:scale(.8);animation:drift 46s linear infinite reverse}
+@keyframes drift{from{translate:0}to{translate:120px}}
+.hero-grid{position:relative;z-index:1;display:grid;gap:36px;align-items:center}
+@media(min-width:980px){.hero-grid{grid-template-columns:1fr 1.05fr;gap:40px}.hero{padding:72px 0 120px}}
+.hero h1{font-size:clamp(3.2rem,7vw + 1rem,6.2rem);margin:16px 0 14px;letter-spacing:-.01em}
+.hero h1 .pop{display:block}
+.hero h1 .pink{color:var(--pink)}
+.lead{font-size:clamp(18px,1vw + 14px,21px);max-width:36ch;margin:0 0 26px}
+.ctas{display:flex;flex-wrap:wrap;gap:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0;padding:0;list-style:none}
+.chips li{background:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:2px 12px;font-weight:700;font-size:14px}
+.stage{position:relative;aspect-ratio:5/4;border-radius:28px;overflow:hidden;border:4px solid var(--ink);box-shadow:0 10px 0 var(--ink);background:#bfe8ff;transform:rotate(1deg)}
+.stage canvas{width:100%;height:100%}
+.meter{position:absolute;left:12px;right:12px;top:10px;background:#fff;border:3px solid var(--ink);border-radius:16px;padding:2px 10px 7px;box-shadow:0 4px 0 var(--ink)}
+.meter .label{display:flex;justify-content:space-between;font-weight:800;font-size:clamp(14px,2.4vw,18px)}
+.bar{height:13px;border:2.5px solid var(--ink);border-radius:9px;overflow:hidden;background:#f1eef6}
+.fill{height:100%;width:100%;background:#ff3b3b;transition:width .4s cubic-bezier(.3,1.6,.5,1),background-color .4s}
+
+/* sections */
+section{padding:72px 0}
+@media(min-width:980px){section{padding:104px 0}}
+.head{max-width:640px;margin:0 auto 44px;text-align:center}
+.head h2{font-size:clamp(2.4rem,3.5vw + 1rem,3.8rem);margin:14px 0 10px}
+.head p{margin:0;font-size:19px;color:var(--dim)}
+.sky-bg{background:var(--sky);border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
+.yellow-bg{background:#fff3c4;border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
+
+.steps{display:grid;gap:22px;padding:0;margin:0;list-style:none;counter-reset:s}
+@media(min-width:820px){.steps{grid-template-columns:repeat(3,1fr);gap:26px}}
+.step{padding:26px 22px 24px;text-align:center}
+.step:nth-child(1){transform:rotate(-1.2deg)}.step:nth-child(3){transform:rotate(1.2deg)}
+.num{display:inline-grid;place-items:center;width:52px;height:52px;margin-bottom:10px;border:3px solid var(--ink);border-radius:50%;background:var(--yellow);font-weight:800;font-size:24px;box-shadow:0 3px 0 var(--ink)}
+.step .big{font-size:46px;line-height:1;margin-bottom:6px}
+.step h3{font-size:24px;margin-bottom:6px}
+.step p{margin:0;color:var(--dim)}
+
+.weapons{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(min-width:640px){.weapons{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1000px){.weapons{grid-template-columns:repeat(4,1fr);gap:20px}}
+.w{padding:20px 16px 18px;text-align:center;transition:transform .15s}
+.w:hover{transform:translateY(-5px) rotate(-2deg)}
+.w .ico{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 10px;border:3px solid var(--ink);border-radius:20px;background:var(--cream);font-size:40px;box-shadow:0 4px 0 var(--ink)}
+.w h3{font-size:21px;margin-bottom:4px}
+.w p{margin:0;color:var(--dim);font-size:15px;line-height:1.45}
+.w .fx{display:inline-block;margin-top:10px;font-weight:800;font-size:13px;color:#fff;background:var(--orange);border:2px solid var(--ink);border-radius:8px;padding:0 8px;transform:rotate(-3deg)}
+.w.nuke{background:#fff3c4}
+.w.nuke .ico{background:var(--yellow)}
+.w.nuke .fx{background:#ff3b3b}
+
+.faces{display:grid;gap:40px;align-items:center}
+@media(min-width:900px){.faces{grid-template-columns:1fr 1fr;gap:60px}}
+.faces h2{font-size:clamp(2.3rem,3vw + 1rem,3.5rem);margin:14px 0 12px}
+.faces > div > p{font-size:19px;color:var(--dim);margin:0}
+.ticks{padding:0;margin:20px 0 0;list-style:none;display:grid;gap:10px}
+.ticks li{display:flex;gap:10px;align-items:flex-start}
+.ticks li::before{content:"✓";flex:0 0 30px;height:30px;display:grid;place-items:center;border:2.5px solid var(--ink);border-radius:10px;background:var(--grass);font-weight:800}
+.cushions{display:flex;justify-content:center;gap:clamp(14px,4vw,40px);padding:30px 16px 22px;background:repeating-conic-gradient(#fff 0 25%,#fdf2f8 0 50%) 0 0/28px 28px}
+.cushions figure{margin:0;text-align:center;font-weight:800}
+.cushions canvas{width:clamp(120px,26vw,190px);height:auto;margin:0 auto 6px}
+
+.calm{position:relative;overflow:hidden;padding:56px 24px 60px;text-align:center;background:linear-gradient(180deg,#c9b6ff 0%,#ffc9e0 55%,#ffe6cf 100%)}
+.calm .bub{position:absolute;bottom:-40px;border-radius:50%;border:2px solid rgba(255,255,255,.95);background:rgba(255,255,255,.25);animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-560px)}}
+.orb{position:relative;width:150px;height:150px;margin:0 auto 26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:18px;
+  background:rgba(255,255,255,.8);border:3px solid var(--ink);box-shadow:0 0 0 14px rgba(255,255,255,.35),0 0 0 28px rgba(255,255,255,.2);animation:breathe 8s ease-in-out infinite}
+.orb::after{content:"Breathe in…";animation:btxt 8s steps(1) infinite}
+@keyframes breathe{0%,100%{transform:scale(.75)}50%{transform:scale(1.08)}}
+@keyframes btxt{0%{content:"Breathe in…"}50%{content:"Breathe out…"}}
+.calm h2{position:relative;font-size:clamp(2.4rem,3.5vw + 1rem,3.8rem);margin:14px 0 10px}
+.calm p{position:relative;max-width:52ch;margin:0 auto 24px;font-size:19px}
+
+.promise{display:grid;gap:18px}
+@media(min-width:700px){.promise{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1000px){.promise{grid-template-columns:repeat(4,1fr)}}
+.promise .card{padding:20px}
+.promise .e{font-size:34px;line-height:1}
+.promise b{display:block;font-size:20px;margin:8px 0 2px}
+.promise p{margin:0;color:var(--dim);font-size:15px}
+
+.final{text-align:center;background:linear-gradient(180deg,#ffe1f0,#7fd3ff);border-top:3px solid var(--ink);padding-bottom:140px;position:relative;overflow:hidden}
+.final::after{content:"";position:absolute;left:-5%;right:-5%;bottom:-2px;height:70px;background:var(--grass);border-top:3px solid var(--ink);border-radius:50% 50% 0 0/100% 100% 0 0}
+.final h2{font-size:clamp(2.8rem,6vw + 1rem,5.4rem);margin:16px 0 12px}
+.final p{font-size:20px;margin:0 0 26px}
+.final .ctas{justify-content:center}
+
+footer{background:var(--grass);border-top:3px solid var(--ink);padding:18px 0 calc(22px + env(safe-area-inset-bottom));font-weight:700}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+
+.reveal{opacity:0;transform:translateY(16px) scale(.98);transition:opacity .5s ease-out,transform .5s cubic-bezier(.2,1.4,.4,1)}
+.reveal.in{opacity:1;transform:none}
+.step.reveal.in:nth-child(1){transform:rotate(-1.2deg)}.step.reveal.in:nth-child(3){transform:rotate(1.2deg)}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  .cloud,.orb,.calm .bub{animation:none}
+  .orb::after{content:"Breathe"}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header>
+  <nav class="wrap nav" aria-label="Main">
+    <a class="logo" href="#top" aria-label="Anger Buster home">💣 <b>Anger</b>&nbsp;Buster</a>
+    <ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#arsenal">Arsenal</a></li>
+      <li><a href="#faces">Faces</a></li>
+      <li><a href="#cooldown">Cool Down</a></li>
+    </ul>
+    <a class="btn btn-pink btn-sm" href="cartoon.html">Play now</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <div class="cloud c1" aria-hidden="true"></div>
+    <div class="cloud c2" aria-hidden="true"></div>
+    <div class="wrap hero-grid">
+      <div>
+        <span class="sticker">A free stress-relief game 😂</span>
+        <h1 id="hero-title"><span class="pop">Blow off steam.</span><span class="pop pink">Nobody gets hurt.</span></h1>
+        <p class="lead">Tap to throw bombs, water balloons, pies, rubber chickens and one big ☢️ nuke at a squishy cushion-faced guy. Keep going until your <b>Anger Level hits 0%</b>.</p>
+        <div class="ctas">
+          <a class="btn btn-pink" href="cartoon.html">Start Busting! 💣</a>
+          <a class="btn" href="#arsenal">See the arsenal</a>
+        </div>
+        <ul class="chips">
+          <li>✨ Free</li><li>🙅 No sign-up</li><li>📱 Works on phones</li>
+        </ul>
+      </div>
+      <div class="stage" role="img" aria-label="Animated preview: she keeps throwing bombs, he wobbles and gets sooty, and the Anger Level meter drops toward zero.">
+        <canvas id="hero" width="1000" height="800"></canvas>
+        <div class="meter" aria-hidden="true">
+          <div class="label"><span id="mVal">Anger Level: 100%</span><span id="mEmo">😂</span></div>
+          <div class="bar"><div class="fill" id="mFill"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="head reveal">
+        <span class="sticker">How it works</span>
+        <h2 id="how-title">Three steps to <span style="color:var(--pink)">calm</span></h2>
+        <p>A full round takes about two minutes. Best played when you're properly annoyed.</p>
+      </div>
+      <ol class="steps">
+        <li class="step card reveal"><div class="num">1</div><div class="big" aria-hidden="true">📷</div><h3>Make the faces</h3><p>Upload a photo for each character, or keep the cute cartoon faces. Each photo becomes a squishy square cushion.</p></li>
+        <li class="step card reveal"><div class="num">2</div><div class="big" aria-hidden="true">👆</div><h3>Pick &amp; tap</h3><p>Choose a weapon and tap on him. Quick hits in a row make combos, which lower your anger faster.</p></li>
+        <li class="step card reveal"><div class="num">3</div><div class="big" aria-hidden="true">📉</div><h3>Watch it drop</h3><p>Every hit lowers your Anger Level. At 0% you get confetti and <b>Peace Restored ❤️</b>.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="arsenal" class="sky-bg" aria-labelledby="arsenal-title">
+    <div class="wrap">
+      <div class="head reveal">
+        <span class="sticker">The arsenal</span>
+        <h2 id="arsenal-title"><span class="pop">Seven ways to say “Hmph!”</span></h2>
+        <p>Each one has its own boom, its own silly sound and its own reaction from him.</p>
+      </div>
+      <div class="weapons">
+        <article class="w card reveal"><div class="ico" aria-hidden="true">💣</div><h3>Bomb</h3><p>Puffy cartoon explosion. He flies up, bounces and gets a sooty afro.</p><span class="fx">KA-BOOM!</span></article>
+        <article class="w card reveal"><div class="ico" aria-hidden="true">💦</div><h3>Water Balloon</h3><p>A big splash. He stays soggy and drippy for a while.</p><span class="fx">SPLASH!</span></article>
+        <article class="w card reveal"><div class="ico" aria-hidden="true">🥧</div><h3>Pie</h3><p>Cream right in the face, then it slowly slides off.</p><span class="fx">SPLAT!</span></article>
+        <article class="w card reveal"><div class="ico" aria-hidden="true">🐔</div><h3>Rubber Chicken</h3><p>A squeaky whack and a flurry of feathers.</p><span class="fx">SQUAWK!</span></article>
+        <article class="w card reveal"><div class="ico" aria-hidden="true">🍌</div><h3>Banana</h3><p>BONK! He slips, topples over and wobbles back up.</p><span class="fx">BONK!</span></article>
+        <article class="w card reveal"><div class="ico" aria-hidden="true">🩴</div><h3>Chappal</h3><p>The classic. One THWACK and he's seeing stars.</p><span class="fx">CHAPAAK!</span></article>
+        <article class="w card nuke reveal"><div class="ico" aria-hidden="true">☢️</div><h3>Nuke</h3><p>Falls from the sky onto a blinking ⚠️ target, flashes the screen white and puffs up a mushroom cloud. Takes 30% off!</p><span class="fx">KA-BOOOOM!</span></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="faces" aria-labelledby="faces-title">
+    <div class="wrap faces">
+      <div class="reveal">
+        <span class="sticker">Cushion faces</span>
+        <h2 id="faces-title">Any photo becomes a <span style="color:var(--pink)">pillow</span> 🛋️</h2>
+        <p>Upload a picture, drag to frame the face and zoom in. It turns into a puffy cushion with stitches and corner tufts that squishes, gets sooty and drips.</p>
+        <ul class="ticks">
+          <li><span><b>Stays on your device.</b> Photos are cropped in your browser and never uploaded anywhere.</span></li>
+          <li><span><b>Cute cartoon faces by default.</b> Skip the photos and you still get angry, dizzy and happy faces.</span></li>
+          <li><span><b>Clear them anytime.</b> One tap brings the cartoon face back.</span></li>
+        </ul>
+      </div>
+      <div class="cushions card reveal" aria-hidden="true">
+        <figure><canvas id="c1" width="380" height="380"></canvas>Her 👸</figure>
+        <figure><canvas id="c2" width="380" height="380"></canvas>Him 🤦‍♂️</figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="cooldown" aria-labelledby="calm-title" style="padding-top:0">
+    <div class="wrap">
+      <div class="calm card reveal">
+        <span class="bub" style="left:8%;width:26px;height:26px;animation-duration:11s" aria-hidden="true"></span>
+        <span class="bub" style="left:22%;width:14px;height:14px;animation-duration:8s;animation-delay:-3s" aria-hidden="true"></span>
+        <span class="bub" style="left:78%;width:30px;height:30px;animation-duration:13s;animation-delay:-6s" aria-hidden="true"></span>
+        <span class="bub" style="left:90%;width:16px;height:16px;animation-duration:9s;animation-delay:-2s" aria-hidden="true"></span>
+        <div class="orb" aria-hidden="true"></div>
+        <span class="sticker" style="background:#fff;position:relative">🌸 Cool Down Mode</span>
+        <h2 id="calm-title">Then… breathe.</h2>
+        <p>One tap switches to a pastel sky with floating bubbles, falling petals and soft music. A breathing circle sets the pace, tapping plays little chimes, and he just dozes off. Zzz… 💤</p>
+        <a class="btn btn-sky" href="cartoon.html">Play &amp; cool down 🌸</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="yellow-bg" aria-labelledby="promise-title">
+    <div class="wrap">
+      <div class="head reveal" style="margin-bottom:32px">
+        <h2 id="promise-title">The fine print <span style="font-size:.6em">(it's short)</span></h2>
+      </div>
+      <div class="promise">
+        <div class="card reveal"><span class="e" aria-hidden="true">🧸</span><b>Cartoon-only chaos</b><p>No blood, no injuries. The worst that happens is soot, cream and a bad hair day.</p></div>
+        <div class="card reveal"><span class="e" aria-hidden="true">🔒</span><b>Private by design</b><p>No accounts, no tracking. Photos stay on the device they were picked on.</p></div>
+        <div class="card reveal"><span class="e" aria-hidden="true">📱</span><b>Phone-friendly</b><p>Tap to throw on your phone. On a computer, keys 1–7 switch weapons.</p></div>
+        <div class="card reveal"><span class="e" aria-hidden="true">🔊</span><b>Silly sounds</b><p>Booms, boings and squeaks, all made right in the browser. One button mutes them all.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final" aria-labelledby="final-title">
+    <div class="wrap">
+      <span class="sticker">Ready? 😤</span>
+      <h2 id="final-title"><span class="pop">Angry right now?</span><span class="pop" style="color:var(--pink);display:block">Good. Let's go!</span></h2>
+      <p>Your Anger Level starts at 100%. Let's get it to zero.</p>
+      <div class="ctas"><a class="btn btn-pink" href="cartoon.html">Start Busting! 💣</a></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>💣 Anger Buster · a silly game for bad days</span>
+    <a href="cartoon.html">Play now →</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+'use strict';
+const INK = '#2b1d3a', TAU = Math.PI * 2;
+const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const rand = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)], clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' }) : null;
+document.querySelectorAll('.reveal').forEach(el => io ? io.observe(el) : el.classList.add('in'));
+
+/* ---- cushion heads (same look as the game) ---- */
+function pillowPath(c, w) {
+  const x = -w / 2, y = -w / 2, k = w * 0.11;
+  c.beginPath(); c.moveTo(x, y);
+  c.quadraticCurveTo(0, y + k, x + w, y); c.quadraticCurveTo(x + w - k, 0, x + w, y + w);
+  c.quadraticCurveTo(0, y + w - k, x, y + w); c.quadraticCurveTo(x + k, 0, x, y); c.closePath();
+}
+function face(c, w, expr, t, lashes) {
+  c.fillStyle = '#ffd3b0'; c.fillRect(-w, -w, 2 * w, 2 * w);
+  const ey = -w * 0.06; c.lineWidth = Math.max(2, w * 0.045); c.lineCap = c.lineJoin = 'round'; c.strokeStyle = INK;
+  c.fillStyle = 'rgba(255,100,130,.45)';
+  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * w * .29, w * .11, w * .09, w * .055, 0, 0, TAU); c.fill(); }
+  for (const s of [-1, 1]) {
+    const x = s * w * .19; c.fillStyle = INK;
+    if (expr === 'hurt') { const r = w * .065; c.beginPath(); c.moveTo(x - r, ey - r); c.lineTo(x + r, ey + r); c.moveTo(x + r, ey - r); c.lineTo(x - r, ey + r); c.stroke(); }
+    else if (expr === 'dizzy') { c.beginPath(); for (let k = 0; k <= 24; k++) { const a = k * .55 + t * 8 * s, r = k / 24 * w * .08; c.lineTo(x + Math.cos(a) * r, ey + Math.sin(a) * r); } c.stroke(); }
+    else if (expr === 'happy') { c.beginPath(); c.arc(x, ey + w * .03, w * .065, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
+    else {
+      c.beginPath(); c.ellipse(x, ey, w * .05, w * .07, 0, 0, TAU); c.fill();
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(x + w * .017, ey - w * .025, w * .018, 0, TAU); c.fill();
+      if (lashes) { c.beginPath(); c.moveTo(x + s * w * .04, ey - w * .05); c.lineTo(x + s * w * .08, ey - w * .08); c.stroke(); }
+      if (expr === 'angry') { c.beginPath(); c.moveTo(x + s * w * .09, ey - w * .15); c.lineTo(x - s * w * .07, ey - w * .085); c.stroke(); }
+      if (expr === 'nervous') { c.beginPath(); c.moveTo(x - s * w * .08, ey - w * .15); c.lineTo(x + s * w * .07, ey - w * .12); c.stroke(); }
+    }
+  }
+  c.fillStyle = INK; const my = w * .19;
+  if (expr === 'happy') { c.beginPath(); c.arc(0, my - w * .03, w * .12, .05 * Math.PI, .95 * Math.PI); c.closePath(); c.fill(); }
+  else if (expr === 'hurt') { c.beginPath(); c.ellipse(0, my + w * .02, w * .075, w * .1, 0, 0, TAU); c.fill(); }
+  else if (expr === 'dizzy' || expr === 'nervous') { c.beginPath(); for (let k = 0; k <= 12; k++) c.lineTo(-w * .12 + k * w * .02, my + Math.sin(k * 1.6 + t * 10) * w * .025); c.stroke(); }
+  else if (expr === 'angry') { c.beginPath(); c.arc(0, my + w * .1, w * .1, 1.15 * Math.PI, 1.85 * Math.PI); c.stroke(); }
+  else { c.beginPath(); c.arc(0, my - w * .05, w * .11, .18 * Math.PI, .82 * Math.PI); c.stroke(); }
+}
+function head(c, size, fabric, expr, ls, o = {}) {
+  const t = o.t || 0;
+  c.save();
+  c.save(); c.translate(4 * ls, 6 * ls); pillowPath(c, size); c.fillStyle = 'rgba(43,29,58,.2)'; c.fill(); c.restore();
+  pillowPath(c, size); c.fillStyle = fabric; c.fill();
+  c.save(); pillowPath(c, size * .86); c.clip(); face(c, size * .86, expr, t, o.lashes);
+  if (o.soot > 0) {
+    c.fillStyle = `rgba(45,35,40,${.62 * o.soot})`; c.fillRect(-size, -size, 2 * size, 2 * size);
+    c.fillStyle = `rgba(255,255,255,${o.soot})`; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * size * .16, -size * .05, size * .06, size * .045, 0, 0, TAU); c.fill(); }
+  }
+  c.restore();
+  const g = c.createRadialGradient(-size * .18, -size * .22, size * .04, 0, 0, size * .72);
+  g.addColorStop(0, 'rgba(255,255,255,.38)'); g.addColorStop(.45, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(43,29,58,.22)');
+  pillowPath(c, size); c.fillStyle = g; c.fill();
+  c.setLineDash([5 * ls, 4 * ls]); pillowPath(c, size * .93); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2 * ls; c.stroke(); c.setLineDash([]);
+  pillowPath(c, size); c.lineJoin = 'round'; c.lineWidth = 4 * ls; c.strokeStyle = INK; c.stroke();
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { c.beginPath(); c.arc(sx * size * .5, sy * size * .5, size * .055, 0, TAU); c.fillStyle = fabric; c.fill(); c.lineWidth = 2.5 * ls; c.stroke(); }
+  c.restore();
+}
+for (const [id, fab, expr, lashes] of [['c1', '#ffb3d1', 'angry', true], ['c2', '#a5d8ff', 'nervous', false]]) {
+  const c = document.getElementById(id).getContext('2d'); c.translate(190, 190); head(c, 290, fab, expr, 2.6, { lashes, t: 0 });
+}
+
+/* ---- hero scene ---- */
+const cv = document.getElementById('hero'), ctx = cv.getContext('2d'), WW = 1000, HH = 800, GY = 690, S = 1.45;
+const GX = 230, HX = 740;
+let parts = [], projs = [], t = 0, rage = 100, nextThrow = .9, throwT = 0, shake = 0, flash = 0, count = 0;
+const guy = { a: 0, va: 0, x: 0, vx: 0, y: 0, vy: 0, ha: 0, hva: 0, hurt: 0, dizzy: 0, soot: 0, say: '', sayT: 0, flail: 0 };
+const LINES = ['OUCH! 😵', 'Hey! Rude!', 'Whyyy 😭', 'My hair!!', 'Not again! 😫', 'Ow ow ow', "I'm just a dummy!", 'Stop iiit!'];
+const mVal = document.getElementById('mVal'), mEmo = document.getElementById('mEmo'), mFill = document.getElementById('mFill');
+function meter() {
+  const r = Math.ceil(rage);
+  mVal.textContent = r > 0 ? `Anger Level: ${r}%` : 'Peace Restored ❤️';
+  mEmo.textContent = r >= 90 ? '😂' : r >= 70 ? '😤' : r >= 50 ? '😠' : r >= 30 ? '😌' : r > 0 ? '🙂' : '😍';
+  mFill.style.width = Math.max(0, rage) + '%'; mFill.style.backgroundColor = `hsl(${lerp(130, 0, rage / 100)},85%,55%)`;
+}
+function P(kind, x, y, o) { parts.push(Object.assign({ kind, x, y, vx: 0, vy: 0, g: 0, life: 1, size: 20, rot: rand(0, TAU), vr: 0, drag: 1, color: '#fff' }, o, { max: (o && o.life) || 1 })); }
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function starPath(x, y, r, n = 5, inner = .45) { ctx.beginPath(); for (let i = 0; i < n * 2; i++) { const a = i * Math.PI / n - Math.PI / 2, q = i % 2 ? r * inner : r; ctx.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); } ctx.closePath(); }
+function limb(x, y, ang, len, w, col) {
+  const ex = x + Math.sin(ang) * len, ey = y + Math.cos(ang) * len; ctx.lineCap = 'round';
+  ctx.strokeStyle = INK; ctx.lineWidth = w + 5 * S; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+  return { x: ex, y: ey };
+}
+function dot(x, y, r, fill) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 3 * S; ctx.strokeStyle = INK; ctx.stroke(); }
+function emoji(ch, x, y, size, rot = 0) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.font = `${size}px ${EMOJI}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ch, 0, 0); ctx.restore(); }
+function nukeShape(x, y, size) {
+  ctx.save(); ctx.translate(x, y); const k = size / 48; ctx.scale(k, k); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.lineJoin = 'round';
+  ctx.fillStyle = '#8a8a98'; for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 8, -12); ctx.lineTo(d * 18, -27); ctx.lineTo(d * 3, -22); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.ellipse(0, 0, 12, 22, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = INK; for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + i * TAU / 3; ctx.beginPath(); ctx.moveTo(0, 4); ctx.arc(0, 4, 7.5, a - .5, a + .5); ctx.closePath(); ctx.fill(); }
+  ctx.beginPath(); ctx.arc(0, 4, 2.2, 0, TAU); ctx.fill(); ctx.restore();
+}
+const guyFeet = () => ({ x: HX + guy.x, y: GY - guy.y });
+const guyPt = L => { const f = guyFeet(); return { x: f.x + Math.sin(guy.a) * L, y: f.y - Math.cos(guy.a) * L }; };
+
+function hit(x, y, nuke) {
+  guy.hurt = 1.1; guy.flail = 1;
+  if (nuke) {
+    shake = 30; flash = 1.2;
+    P('ring', x, y, { life: .9, size: 1200, color: '#fff' });
+    for (let i = 0; i < 30; i++) { const a = rand(0, TAU), sp = rand(80, 380); P('puff', x, y, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, life: rand(.7, 1.2), size: rand(30, 56), color: pick(['#fff', '#ffd23f', '#ff9f1c', '#ff6b6b', '#ffe8a3']), drag: .93 }); }
+    for (let i = 0; i < 13; i++) P('puff', x + rand(-15, 15), GY - i * 22, { vy: -rand(40, 80), life: rand(1.8, 2.5), size: rand(30, 42), color: pick(['#ffb347', '#ff8c42', '#ffd23f', '#fff3c4']), drag: .99 });
+    for (let i = 0; i < 20; i++) { const a = rand(0, TAU); P('puff', x + Math.cos(a) * rand(20, 110), GY - 330 + Math.sin(a) * rand(10, 45), { vx: Math.cos(a) * 40, vy: -30, life: rand(2, 2.8), size: rand(38, 60), color: pick(['#ff6b6b', '#ff9f1c', '#ffd23f', '#ffe8a3']), drag: .99 }); }
+    P('text', x, 150, { text: 'KA-BOOOOM!', life: 1.4, size: 84, color: '#ff3b6b', rot: rand(-.15, .15) });
+    guy.vx += 600; guy.vy = 900; guy.y = Math.max(guy.y, 1); guy.va += 14; guy.hva += 16; guy.soot = 1; guy.dizzy = 3;
+    guy.say = pick(['My eyebrows!! 😭', 'WHAT WAS THAT?! 😵']); guy.sayT = 2.2;
+    rage -= 30;
+  } else {
+    shake = 14;
+    P('ring', x, y, { life: .45, size: 170, color: '#ffd23f' });
+    for (let i = 0; i < 14; i++) { const a = rand(0, TAU), sp = rand(60, 280); P('puff', x, y, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, life: rand(.5, .95), size: rand(26, 50), color: pick(['#fff', '#ffd23f', '#ff9f1c', '#ff6b6b', '#ffe8a3']), drag: .93 }); }
+    for (let i = 0; i < 8; i++) { const a = rand(0, TAU), sp = rand(150, 420); P('star', x, y, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 400, life: rand(.6, 1), size: rand(14, 24), vr: rand(-10, 10), color: '#ffd23f' }); }
+    P('text', x, y - 60, { text: pick(['KA-BOOM!', 'BOOM!', 'KABLAM!']), life: 1.1, size: 62, color: pick(['#ff3b6b', '#7b2ff7', '#00a6ed', '#ff8c00']), rot: rand(-.25, .25) });
+    guy.vx += 380; guy.vy = 480; guy.y = Math.max(guy.y, 1); guy.va += 8; guy.hva += 10; guy.soot = 1; guy.dizzy = 2;
+    if (Math.random() < .7) { guy.say = pick(LINES); guy.sayT = 1.6; }
+    rage -= rand(10, 14);
+  }
+  if (rage <= 0) {
+    rage = 0; guy.say = 'OK OK, you win! 🏳️'; guy.sayT = 2.6;
+    for (let i = 0; i < 50; i++) P('confetti', WW / 2, 250, { vx: rand(-450, 450), vy: rand(-650, -150), g: 900, life: rand(1.5, 2.5), size: rand(9, 15), color: pick(['#ff5fa2', '#ffd23f', '#3bceac', '#7b2ff7', '#00a6ed', '#ff8c42']), vr: rand(-12, 12), drag: .985 });
+    nextThrow = 3.2;
+  }
+  meter();
+}
+function step(dt) {
+  t += dt; nextThrow -= dt; throwT = Math.max(0, throwT - dt / .38);
+  if (nextThrow <= 0) {
+    if (rage <= 0) { rage = 100; meter(); nextThrow = 1; }
+    else {
+      count++;
+      if (count % 5 === 0) { projs.push({ nuke: true, x: HX, y: -60, vx: 0, vy: 150, g: 900, rot: 0 }); nextThrow = 3.2; }
+      else {
+        throwT = 1;
+        const sx = GX + 80, sy = GY - 170, tx = guyPt(200).x, ty = GY - 260, T = .65, g = 1500;
+        projs.push({ x: sx, y: sy, vx: (tx - sx) / T, vy: (ty - sy - .5 * g * T * T) / T, g, rot: 0 });
+        nextThrow = rand(1.4, 2);
+      }
+    }
+  }
+  for (let i = projs.length - 1; i >= 0; i--) {
+    const p = projs[i]; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += (p.nuke ? 0 : 7) * dt;
+    const h = guyPt(240), b = guyPt(120);
+    if ((!p.nuke && (Math.hypot(p.x - h.x, p.y - h.y) < 80 || Math.hypot(p.x - b.x, p.y - b.y) < 70)) || (p.nuke && p.y > GY - 250)) { hit(p.x, p.y, p.nuke); projs.splice(i, 1); }
+    else if (p.y > GY + 20) projs.splice(i, 1);
+  }
+  guy.va += (-55 * guy.a - 5.5 * guy.va) * dt; guy.a = clamp(guy.a + guy.va * dt, -1.4, 1.4);
+  guy.hva += (-110 * guy.ha - 6 * guy.hva - guy.va * 2.2) * dt; guy.ha += guy.hva * dt;
+  guy.vx += (-14 * guy.x - 4.5 * guy.vx) * dt; guy.x += guy.vx * dt;
+  if (guy.y > 0 || guy.vy > 0) { guy.vy -= 2000 * dt; guy.y += guy.vy * dt; if (guy.y <= 0) { guy.y = 0; guy.vy = guy.vy < -300 ? -guy.vy * .3 : 0; } }
+  for (const k of ['hurt', 'dizzy', 'sayT']) guy[k] = Math.max(0, guy[k] - dt);
+  guy.flail = Math.max(0, guy.flail - dt * .9); guy.soot = Math.max(0, guy.soot - dt * .3);
+  if (rage > 40 && Math.random() < dt * 4) P('steam', GX + rand(-30, 30), GY - 300, { vx: rand(-20, 20), vy: rand(-90, -50), life: 1.1, size: rand(12, 20), drag: .98 });
+  for (const p of parts) { p.life -= dt; p.vy += p.g * dt; if (p.drag !== 1) { const d = Math.pow(p.drag, dt * 60); p.vx *= d; p.vy *= d; } p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; }
+  parts = parts.filter(p => p.life > 0);
+  shake = Math.max(0, shake - dt * 40); flash = Math.max(0, flash - dt * 1.8);
+}
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (shake > 0) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+  const g = ctx.createLinearGradient(0, 0, 0, GY); g.addColorStop(0, '#7fd3ff'); g.addColorStop(1, '#ffe1f0');
+  ctx.fillStyle = g; ctx.fillRect(-40, -40, WW + 80, HH + 80);
+  ctx.save(); ctx.translate(500, 230); ctx.rotate(t * .2); ctx.fillStyle = 'rgba(255,230,120,.45)';
+  for (let i = 0; i < 12; i++) { ctx.rotate(TAU / 12); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-22, -190); ctx.lineTo(22, -190); ctx.fill(); }
+  ctx.restore(); dot(500, 230, 64, '#ffd23f');
+  ctx.fillStyle = '#fff';
+  for (const [cx, cy, s] of [[(120 + t * 14) % 1200 - 100, 330, 1.2], [(700 + t * 9) % 1200 - 100, 380, .9]]) { ctx.beginPath(); ctx.arc(cx, cy, 30 * s, 0, TAU); ctx.arc(cx + 36 * s, cy - 16 * s, 38 * s, 0, TAU); ctx.arc(cx + 76 * s, cy, 28 * s, 0, TAU); ctx.rect(cx, cy, 76 * s, 28 * s); ctx.fill(); }
+  ctx.fillStyle = '#a3e48a'; ctx.beginPath(); ctx.moveTo(-40, GY);
+  for (let x = -40; x <= WW + 40; x += 20) ctx.lineTo(x, GY - 80 - Math.sin(x / WW * 5 + 1) * 40); ctx.lineTo(WW + 40, GY); ctx.fill();
+  ctx.fillStyle = '#7ed957'; ctx.fillRect(-40, GY, WW + 80, HH); ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-40, GY); ctx.lineTo(WW + 40, GY); ctx.stroke();
+  for (let i = 0; i < 9; i++) { const x = 60 + i * 110, y = GY - 50 - (i % 3) * 12; ctx.fillStyle = ['#ff5fa2', '#ffd23f', '#fff', '#b197fc'][i % 4]; for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.arc(x + Math.cos(k * 1.26) * 7, y + Math.sin(k * 1.26) * 7, 6, 0, TAU); ctx.fill(); } ctx.fillStyle = '#ff9f1c'; ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); }
+
+  // girl
+  const angry = rage > 50, bob = angry ? Math.abs(Math.sin(t * 9)) * 6 : Math.abs(Math.sin(t * 2.5)) * 3;
+  ctx.save(); ctx.translate(GX, GY - bob);
+  ctx.fillStyle = 'rgba(43,29,58,.15)'; ctx.beginPath(); ctx.ellipse(0, bob + 4, 64, 13, 0, 0, TAU); ctx.fill();
+  for (const s of [-1, 1]) { limb(s * 11 * S, -44 * S, s * .06, 40 * S, 10 * S, '#ffd3b0'); ctx.beginPath(); ctx.ellipse(s * 13 * S, -3 * S, 13 * S, 7 * S, 0, 0, TAU); ctx.fillStyle = '#ff5fa2'; ctx.fill(); ctx.lineWidth = 3 * S; ctx.strokeStyle = INK; ctx.stroke(); }
+  if (angry) { const e = limb(-20 * S, -105 * S, -.9, 26 * S, 10 * S, '#ffd3b0'); limb(e.x, e.y, .7, 24 * S, 10 * S, '#ffd3b0'); } else limb(-20 * S, -105 * S, -.35, 44 * S, 10 * S, '#ffd3b0');
+  ctx.beginPath(); ctx.moveTo(-22 * S, -118 * S); ctx.lineTo(22 * S, -118 * S); ctx.lineTo(42 * S, -40 * S); ctx.quadraticCurveTo(0, -32 * S, -42 * S, -40 * S); ctx.closePath();
+  ctx.fillStyle = '#ff5fa2'; ctx.fill(); ctx.lineWidth = 3.5 * S; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; for (const [x, y] of [[-15, -60], [10, -75], [22, -50], [-5, -95]]) { ctx.beginPath(); ctx.arc(x * S, y * S, 3.5 * S, 0, TAU); ctx.fill(); }
+  const p = 1 - throwT; let ang = .55 + Math.sin(t * 3) * .05;
+  if (throwT > 0) ang = p < .35 ? lerp(.55, 3.8, p / .35) : p < .6 ? lerp(3.8, 1.6, (p - .35) / .25) : lerp(1.6, .55, (p - .6) / .4);
+  const hand = limb(20 * S, -105 * S, ang, 44 * S, 10 * S, '#ffd3b0');
+  if (throwT <= .4) emoji('💣', hand.x + 6 * S, hand.y - 8 * S, 30 * S, Math.sin(t * 4) * .2);
+  dot(hand.x, hand.y, 6 * S, '#ffd3b0');
+  ctx.translate(0, -166 * S); ctx.rotate(Math.sin(t * 1.6) * .04);
+  head(ctx, 88 * S, '#ffb3d1', rage <= 0 ? 'happy' : rage > 60 ? 'angry' : rage < 25 ? 'happy' : 'idle', S, { t, lashes: true });
+  ctx.save(); ctx.translate(-30 * S, -44 * S); ctx.rotate(-.35); ctx.fillStyle = '#ff2e7e'; ctx.strokeStyle = INK; ctx.lineWidth = 3 * S;
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * 22 * S, -13 * S); ctx.lineTo(s * 22 * S, 13 * S); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  dot(0, 0, 6 * S, '#ff2e7e'); ctx.restore();
+  if (angry) emoji('💢', 46 * S, -40 * S, 26 * S * (1 + Math.sin(t * 10) * .12));
+  ctx.restore();
+
+  // guy
+  const f = guyFeet(); ctx.fillStyle = 'rgba(43,29,58,.15)'; ctx.beginPath(); ctx.ellipse(f.x, GY + 4, 70 * (1 - Math.min(.6, guy.y / 500)), 13, 0, 0, TAU); ctx.fill();
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(guy.a + Math.sin(t * 30) * .01);
+  const air = guy.y > 2, spread = air ? .35 + Math.sin(t * 20) * .2 : .08;
+  for (const s of [-1, 1]) { const e = limb(s * 13 * S, -58 * S, s * spread, 52 * S, 16 * S, '#3b5bdb'); ctx.beginPath(); ctx.ellipse(e.x + s * 5 * S, e.y + S, 15 * S, 8 * S, 0, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 3 * S; ctx.strokeStyle = INK; ctx.stroke(); }
+  const raise = rage <= 0 ? .7 : clamp(guy.hurt * 1.6, 0, 1), arms = {};
+  for (const s of [-1, 1]) arms[s] = limb(s * 27 * S, -112 * S, s * (lerp(.32, 2.65, raise) + Math.sin(t * 26 + s * 1.7) * .7 * guy.flail), 44 * S, 13 * S, '#ff8c42');
+  rr(-31 * S, -126 * S, 62 * S, 74 * S, 20 * S); ctx.fillStyle = '#ff8c42'; ctx.fill(); ctx.lineWidth = 3.5 * S; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = `800 ${22 * S}px 'Baloo 2', sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('OOPS', 0, -88 * S);
+  for (const s of [-1, 1]) dot(arms[s].x, arms[s].y, 7.5 * S, '#ffd3b0');
+  if (rage <= 0) emoji('🏳️', arms[1].x + 10 * S, arms[1].y - 16 * S, 30 * S, .2);
+  ctx.translate(0, -128 * S); ctx.rotate(guy.ha); ctx.translate(0, -44 * S);
+  if (guy.soot > .15) { ctx.globalAlpha = Math.min(1, guy.soot * 1.5); ctx.fillStyle = '#4a3f45'; for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc((-36 + i * 12) * S, (-44 - Math.sin(i * 1.3) * 8) * S, 15 * S, 0, TAU); ctx.fill(); } ctx.globalAlpha = 1; }
+  else { ctx.strokeStyle = INK; ctx.lineWidth = 4 * S; ctx.lineCap = 'round'; for (const dx of [-8, 0, 8]) { ctx.beginPath(); ctx.moveTo(dx * S, -42 * S); ctx.quadraticCurveTo((dx + 8) * S, -58 * S, (dx + 2) * S, -64 * S); ctx.stroke(); } }
+  const expr = rage <= 0 ? 'happy' : guy.dizzy > 0 ? 'dizzy' : guy.hurt > 0 ? 'hurt' : 'nervous';
+  head(ctx, 88 * S, '#a5d8ff', expr, S, { t, soot: guy.soot });
+  if (guy.dizzy > 0) { for (let i = 0; i < 4; i++) { const a = t * 6 + i * TAU / 4; starPath(Math.cos(a) * 52 * S, -58 * S + Math.sin(a) * 12 * S, 10 * S); ctx.fillStyle = '#ffd23f'; ctx.fill(); ctx.lineWidth = 2.5 * S; ctx.strokeStyle = INK; ctx.stroke(); } }
+  else if (rage > 0) { const y = -20 * S + Math.sin(t * 4) * 4 * S; ctx.beginPath(); ctx.moveTo(50 * S, y - 12 * S); ctx.quadraticCurveTo(58 * S, y + 2 * S, 50 * S, y + 6 * S); ctx.quadraticCurveTo(42 * S, y + 2 * S, 50 * S, y - 12 * S); ctx.fillStyle = '#8ad4ff'; ctx.fill(); ctx.lineWidth = 2.5 * S; ctx.strokeStyle = INK; ctx.stroke(); }
+  ctx.restore();
+
+  // projectiles
+  for (const q of projs) {
+    if (q.nuke) {
+      ctx.save(); ctx.translate(q.x, GY); ctx.scale(1, .25); ctx.setLineDash([12, 9]); ctx.strokeStyle = Math.sin(t * 18) > 0 ? '#ff3b3b' : '#fff'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(0, 0, 90, 0, TAU); ctx.stroke(); ctx.restore();
+      nukeShape(q.x, q.y, 70);
+    } else emoji('💣', q.x, q.y, 58, q.rot);
+  }
+  // particles
+  for (const p of parts) {
+    const k = 1 - p.life / p.max, a = Math.min(1, p.life / p.max * 2.5);
+    ctx.save(); ctx.globalAlpha = a;
+    if (p.kind === 'puff') { ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (.5 + k * .8), 0, TAU); ctx.fillStyle = p.color; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); }
+    else if (p.kind === 'ring') { ctx.globalAlpha = 1 - k; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (.2 + k), 0, TAU); ctx.lineWidth = 12 * (1 - k) + 1; ctx.strokeStyle = p.color; ctx.stroke(); }
+    else if (p.kind === 'star') { ctx.translate(p.x, p.y); ctx.rotate(p.rot); starPath(0, 0, p.size); ctx.fillStyle = p.color; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke(); }
+    else if (p.kind === 'steam') { ctx.globalAlpha = (1 - k) * .85; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (.6 + k), 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(43,29,58,.5)'; ctx.stroke(); }
+    else if (p.kind === 'confetti') { ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); }
+    else if (p.kind === 'text') {
+      const sc = k < .15 ? k / .15 * 1.25 : k < .25 ? lerp(1.25, 1, (k - .15) / .1) : 1;
+      ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(sc, sc);
+      ctx.font = `800 ${p.size}px 'Baloo 2', sans-serif`; const tw = ctx.measureText(p.text).width;
+      ctx.save(); ctx.scale(1, .6); starPath(0, 0, tw * .62, 12, .8); ctx.restore();
+      ctx.fillStyle = '#ffd23f'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 9; ctx.strokeText(p.text, 0, 3); ctx.fillStyle = p.color; ctx.fillText(p.text, 0, 3);
+    }
+    ctx.restore();
+  }
+  // speech
+  if (guy.sayT > 0) {
+    const h = guyPt(330), fs = 30; ctx.save(); ctx.globalAlpha = Math.min(1, guy.sayT * 3);
+    ctx.font = `800 ${fs}px 'Baloo 2', ${EMOJI}`; const w = ctx.measureText(guy.say).width + 34, hh = fs * 1.7;
+    const bx = clamp(h.x - w / 2, 10, WW - w - 10), by = h.y - hh - 20;
+    rr(bx, by, w, hh, hh / 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+    const tx = clamp(h.x, bx + 24, bx + w - 24); ctx.beginPath(); ctx.moveTo(tx - 12, by + hh - 2); ctx.lineTo(tx, by + hh + 18); ctx.lineTo(tx + 12, by + hh - 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx - 12, by + hh); ctx.lineTo(tx, by + hh + 18); ctx.lineTo(tx + 12, by + hh); ctx.stroke();
+    ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(guy.say, bx + w / 2, by + hh / 2 + 2); ctx.restore();
+  }
+  if (flash > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = `rgba(255,255,240,${Math.min(1, flash) * .9})`; ctx.fillRect(0, 0, WW, HH); }
+}
+meter();
+if (reduce) { draw(); return; }
+let last = performance.now(), visible = true;
+if ('IntersectionObserver' in window) new IntersectionObserver(e => { visible = e[0].isIntersecting; }).observe(cv);
+(function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (visible && !document.hidden) { step(dt); draw(); }
+  requestAnimationFrame(loop);
+})(performance.now());
+})();
+</script>
+</body>
+</html>
