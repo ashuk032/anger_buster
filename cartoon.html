@@ -69,7 +69,8 @@ body.calm .weapons{display:none}
 #linkInput{flex:1;min-width:0;border:3px solid var(--ink);border-radius:14px;padding:8px 10px;font:600 14px 'Baloo 2',sans-serif;color:var(--ink)}
 .mlinks{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
 .mlinks a{font-size:13px;font-weight:800;color:var(--ink);background:#f3ecfb;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;text-decoration:none}
-.embed{margin-top:10px;border-radius:14px;overflow:hidden}
+.embed{margin:0 0 10px;border-radius:14px;overflow:hidden}
+.embed:not(:empty)::before{content:'▶ Tap the play button inside this player';display:block;font-weight:800;font-size:13px;background:var(--yellow);border:2px solid var(--ink);border-radius:10px;padding:2px 10px;margin-bottom:6px;width:max-content;max-width:100%}
 .embed:empty{display:none}
 .embed iframe{display:block;width:100%;border:0;border-radius:12px}
 #musicBtn.playing{background:var(--yellow);animation:bop .5s ease-in-out infinite alternate}
@@ -123,10 +124,11 @@ body.calm .weapons{display:none}
     <button class="mtab on" data-pane="beats" role="tab">🥁 Game Beats</button>
     <button class="mtab" data-pane="link" role="tab">🔗 Your Music</button>
   </div>
+  <div class="embed" id="embedBox"></div>
   <div class="mpane" data-pane="beats">
     <p>A bouncy soundtrack made right in your browser. Free, works offline, no account needed.</p>
     <div class="mrow">
-      <button class="btn" id="beatsBtn">▶ Play beats</button>
+      <button class="btn" id="beatsBtn" style="background:var(--pink);color:#fff;font-size:17px">▶ Play beats</button>
       <input type="range" id="beatsVol" min="0" max="1" step="0.01" value="0.5" aria-label="Beats volume">
     </div>
   </div>
@@ -140,7 +142,6 @@ body.calm .weapons{display:none}
     </div>
     <p class="hint" id="linkMsg">Spotify and Apple Music play 30-second previews unless you're signed in to them in this browser. YouTube is free but may show ads.</p>
   </div>
-  <div class="embed" id="embedBox"></div>
 </div>
 
 <div class="bottom" id="bottom">
@@ -1137,8 +1138,9 @@ function loadEmbed(link) {
   f.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
   f.referrerPolicy = 'strict-origin-when-cross-origin';
   box.appendChild(f); embedName = e.name;
+  $('#musicPanel').scrollTo({ top: 0, behavior: 'smooth' });
   const preview = e.name === 'Spotify' || e.name === 'Apple Music' ? ' (Previews only unless you are signed in.)' : '';
-  msg.textContent = `${e.name} player loaded. Press play in it, then close this panel.${preview}`;
+  msg.textContent = `${e.name} player loaded at the top of this panel. Tap its play button, then close this panel.${preview}`;
   store.set('ab_music_link', link.trim());
   if (beats) stopBeats();
   renderMusic(); return true;
