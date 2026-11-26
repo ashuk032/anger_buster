@@ -52,6 +52,29 @@ button,label{touch-action:manipulation;font-family:inherit}
 .btn.face{background:#ffc6e0}
 .btn.primary{background:var(--pink);color:#fff;font-size:18px;padding:10px 22px;-webkit-text-stroke:.5px var(--ink)}
 body.calm .weapons{display:none}
+/* music panel */
+.music{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));width:min(440px,calc(100% - 20px));z-index:8;transform:translate(-50%,0);
+  background:#fff;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);padding:12px 14px 14px;transition:transform .35s cubic-bezier(.2,1.2,.4,1),opacity .25s;max-height:calc(100% - 90px);overflow:auto}
+.music.closed{transform:translate(-50%,calc(100% + 40px));opacity:0;pointer-events:none}
+.mhead{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:18px}
+.mclose{border:3px solid var(--ink);background:#fff;border-radius:50%;width:34px;height:34px;font-weight:800;cursor:pointer;box-shadow:0 3px 0 var(--ink);color:var(--ink)}
+.mtabs{display:flex;gap:8px;margin:10px 0}
+.mtab{flex:1;border:3px solid var(--ink);border-radius:14px;background:#fff;font:800 14px 'Baloo 2',sans-serif;padding:6px;cursor:pointer;color:var(--ink)}
+.mtab.on{background:var(--yellow)}
+.mpane p{margin:4px 0 8px;font-size:14px;line-height:1.4}
+.mpane.hidden{display:none}
+.mrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mrow input[type=range]{flex:1;accent-color:var(--pink);min-width:120px}
+#linkForm{display:flex;gap:8px}
+#linkInput{flex:1;min-width:0;border:3px solid var(--ink);border-radius:14px;padding:8px 10px;font:600 14px 'Baloo 2',sans-serif;color:var(--ink)}
+.mlinks{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+.mlinks a{font-size:13px;font-weight:800;color:var(--ink);background:#f3ecfb;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;text-decoration:none}
+.embed{margin-top:10px;border-radius:14px;overflow:hidden}
+.embed:empty{display:none}
+.embed iframe{display:block;width:100%;border:0;border-radius:12px}
+#musicBtn.playing{background:var(--yellow);animation:bop .5s ease-in-out infinite alternate}
+@keyframes bop{to{transform:translateY(-3px) rotate(-6deg)}}
+
 @media (max-width:440px){
   .wbtn{width:46px;height:58px;font-size:22px;border-radius:14px}
   .wbtn small{font-size:10px}
@@ -94,12 +117,39 @@ body.calm .weapons{display:none}
 </div>
 <div id="toast"></div>
 
+<div class="music closed" id="musicPanel" role="dialog" aria-label="Music" aria-hidden="true">
+  <div class="mhead"><span>🎵 Music while you bust</span><button class="mclose" id="musicClose" aria-label="Close music panel">✕</button></div>
+  <div class="mtabs" role="tablist">
+    <button class="mtab on" data-pane="beats" role="tab">🥁 Game Beats</button>
+    <button class="mtab" data-pane="link" role="tab">🔗 Your Music</button>
+  </div>
+  <div class="mpane" data-pane="beats">
+    <p>A bouncy soundtrack made right in your browser. Free, works offline, no account needed.</p>
+    <div class="mrow">
+      <button class="btn" id="beatsBtn">▶ Play beats</button>
+      <input type="range" id="beatsVol" min="0" max="1" step="0.01" value="0.5" aria-label="Beats volume">
+    </div>
+  </div>
+  <div class="mpane hidden" data-pane="link">
+    <p>Paste a link to a song or playlist from <b>YouTube</b>, <b>Spotify</b>, <b>SoundCloud</b> or <b>Apple Music</b>. Press play in the player, then close this panel; the music keeps going.</p>
+    <form id="linkForm"><input id="linkInput" type="url" inputmode="url" placeholder="https://open.spotify.com/playlist/…" aria-label="Music link" required><button class="btn" type="submit">Load</button></form>
+    <div class="mlinks">
+      <a href="https://www.youtube.com/results?search_query=upbeat+happy+music+playlist" target="_blank" rel="noopener">Find on YouTube ↗</a>
+      <a href="https://open.spotify.com/search/rage%20workout" target="_blank" rel="noopener">Find on Spotify ↗</a>
+      <a href="https://soundcloud.com/search/sets?q=chill%20beats" target="_blank" rel="noopener">Find on SoundCloud ↗</a>
+    </div>
+    <p class="hint" id="linkMsg">Spotify and Apple Music play 30-second previews unless you're signed in to them in this browser. YouTube is free but may show ads.</p>
+  </div>
+  <div class="embed" id="embedBox"></div>
+</div>
+
 <div class="bottom" id="bottom">
   <div class="weapons" id="weapons"></div>
   <div class="actions">
     <button class="btn face" id="facesBtn">📷 Faces</button>
     <button class="btn cool" id="coolBtn">🌸 Cool Down Mode</button>
     <button class="btn" id="muteBtn" aria-label="Toggle sound">🔊</button>
+    <button class="btn" id="musicBtn" aria-label="Music">🎵</button>
   </div>
 </div>
 
@@ -995,9 +1045,11 @@ function setMode(m) {
   layout();
   if (m === 'calm') {
     resetGuy(); startCalmMusic(); guySay('Zzz… 💤', 2.5);
+    if (beats) { beatsResume = true; stopBeats(); }
     toast(rage <= 0 ? 'Peace Restored ❤️' : 'Cool Down Mode 🌸');
   } else {
     stopCalmMusic(); resetGuy();
+    if (beatsResume) { beatsResume = false; startBeats(); }
     if (won) resetGame(); else toast(`Anger Level: ${Math.ceil(rage)}% ${rageEmoji(rage)}`);
   }
 }
@@ -1006,8 +1058,109 @@ function renderMute() { $('#muteBtn').textContent = muted ? '🔇' : '🔊'; }
 $('#muteBtn').addEventListener('click', () => {
   muted = !muted; store.set('ab_muted', muted ? '1' : '0'); renderMute();
   if (muted) stopCalmMusic(); else if (mode === 'calm') startCalmMusic();
+  if (beats) beats.bus.gain.value = muted ? 0 : beatVol;
 });
 renderMute();
+
+/* ---------------- music: built-in beats + embedded players ---------------- */
+let beats = null, beatVol = 0.5, beatsResume = false;
+const BPM = 124, STEP = 60 / BPM / 4;
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+const CHORDS = [[48, 55, 60, 64], [45, 52, 57, 60], [41, 48, 53, 57], [43, 50, 55, 59]];
+const MEL = [[72, 0, 76, 79, 0, 76, 74, 0, 72, 74, 76, 0, 79, 0, 76, 0], [72, 0, 69, 72, 0, 76, 74, 0, 72, 0, 69, 0, 67, 69, 72, 0],
+  [69, 0, 72, 77, 0, 76, 72, 0, 69, 72, 74, 0, 72, 0, 69, 0], [71, 0, 74, 79, 0, 77, 74, 0, 79, 0, 81, 79, 74, 0, 71, 0]];
+function bTone(t, type, f0, f1, dur, vol, filt) {
+  const a = AC, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g);
+  let out = g;
+  if (filt) { const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filt; g.connect(f); out = f; }
+  out.connect(beats.bus); o.start(t); o.stop(t + dur + 0.02);
+}
+function bNoise(t, dur, vol, type, freq) {
+  const a = AC, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = noiseBuf; f.type = type; f.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f).connect(g).connect(beats.bus); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+}
+function beatStep(st, t) {
+  const bar = Math.floor(st / 16) % 4, i = st % 16, ch = CHORDS[bar];
+  if (i % 4 === 0) bTone(t, 'sine', 160, 45, 0.2, 0.9);
+  if (i === 4 || i === 12) { bNoise(t, 0.16, 0.35, 'bandpass', 1900); bTone(t, 'triangle', 220, 140, 0.08, 0.15); }
+  if (i % 2 === 0) bNoise(t, i % 4 === 2 ? 0.09 : 0.03, 0.1, 'highpass', 7500);
+  if ([0, 3, 6, 8, 11, 14].includes(i)) bTone(t, 'triangle', midi(ch[0] - 12), midi(ch[0] - 12), 0.2, 0.32);
+  if (i === 2 || i === 10) ch.slice(1).forEach(nn => bTone(t, 'triangle', midi(nn), midi(nn), 0.12, 0.04));
+  const m = MEL[bar][i]; if (m) bTone(t, 'square', midi(m), midi(m), STEP * 1.7, 0.06, 2600);
+}
+function startBeats() {
+  const a = audio(); if (!a || beats) return;
+  const bus = a.createGain(); bus.gain.value = muted ? 0 : beatVol; bus.connect(master);
+  beats = { bus, step: 0, next: a.currentTime + 0.06 };
+  beats.timer = setInterval(() => { while (beats && beats.next < AC.currentTime + 0.15) { beatStep(beats.step, beats.next); beats.next += STEP; beats.step++; } }, 25);
+  renderMusic();
+}
+function stopBeats() {
+  if (!beats) return;
+  clearInterval(beats.timer); const b = beats.bus, t = AC.currentTime; beats = null;
+  b.gain.setValueAtTime(b.gain.value, t); b.gain.linearRampToValueAtTime(0, t + 0.3); setTimeout(() => b.disconnect(), 500);
+  renderMusic();
+}
+let embedName = '';
+function renderMusic() {
+  $('#beatsBtn').textContent = beats ? '⏸ Stop beats' : '▶ Play beats';
+  $('#musicBtn').classList.toggle('playing', !!beats || !!embedName);
+}
+function toEmbed(raw) {
+  let u; try { u = new URL(raw.trim()); } catch (e) { return null; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  const h = u.hostname.replace(/^(www|m)\./, ''), id = /^[\w-]+$/;
+  if (h === 'youtu.be') { const v = u.pathname.slice(1).split('/')[0]; if (id.test(v)) return { src: `https://www.youtube.com/embed/${v}?rel=0`, h: 220, name: 'YouTube' }; }
+  if (h === 'youtube.com' || h === 'music.youtube.com') {
+    const list = u.searchParams.get('list'); let v = u.searchParams.get('v');
+    if (!v) { const m = u.pathname.match(/^\/(shorts|live|embed)\/([\w-]+)/); if (m) v = m[2]; }
+    const L = list && id.test(list) ? list : '';
+    if (v && id.test(v)) return { src: `https://www.youtube.com/embed/${v}?rel=0${L ? '&list=' + L : ''}`, h: 220, name: 'YouTube' };
+    if (L) return { src: `https://www.youtube.com/embed/videoseries?list=${L}`, h: 220, name: 'YouTube' };
+  }
+  if (h === 'open.spotify.com') { const m = u.pathname.match(/(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]+)/); if (m) return { src: `https://open.spotify.com/embed/${m[1]}/${m[2]}`, h: 152, name: 'Spotify' }; }
+  if (h === 'soundcloud.com' || h === 'on.soundcloud.com') return { src: `https://w.soundcloud.com/player/?url=${encodeURIComponent(u.origin + u.pathname)}&color=%23ff5fa2&auto_play=false&visual=false&show_comments=false&hide_related=true`, h: 166, name: 'SoundCloud' };
+  if (h === 'music.apple.com') return { src: `https://embed.music.apple.com${u.pathname}${u.search}`, h: 175, name: 'Apple Music' };
+  return null;
+}
+function loadEmbed(link) {
+  const e = toEmbed(link), msg = $('#linkMsg');
+  if (!e) { msg.textContent = "Hmm, that link didn't work. Try a YouTube, Spotify, SoundCloud or Apple Music song or playlist link."; return false; }
+  const box = $('#embedBox'); box.innerHTML = '';
+  const f = document.createElement('iframe');
+  f.src = e.src; f.height = e.h; f.title = e.name + ' player';
+  f.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+  f.referrerPolicy = 'strict-origin-when-cross-origin';
+  box.appendChild(f); embedName = e.name;
+  const preview = e.name === 'Spotify' || e.name === 'Apple Music' ? ' (Previews only unless you are signed in.)' : '';
+  msg.textContent = `${e.name} player loaded. Press play in it, then close this panel.${preview}`;
+  store.set('ab_music_link', link.trim());
+  if (beats) stopBeats();
+  renderMusic(); return true;
+}
+function openMusic(open) {
+  const p = $('#musicPanel'); p.classList.toggle('closed', !open); p.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+$('#musicBtn').addEventListener('click', () => { audio(); openMusic($('#musicPanel').classList.contains('closed')); });
+$('#musicClose').addEventListener('click', () => openMusic(false));
+document.querySelectorAll('.mtab').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.mtab').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.mpane').forEach(x => x.classList.toggle('hidden', x.dataset.pane !== b.dataset.pane));
+}));
+$('#beatsBtn').addEventListener('click', () => {
+  if (beats) { stopBeats(); return; }
+  if (embedName) { $('#embedBox').innerHTML = ''; embedName = ''; }
+  startBeats();
+});
+$('#beatsVol').addEventListener('input', e => { beatVol = +e.target.value; if (beats && !muted) beats.bus.gain.value = beatVol; });
+$('#linkForm').addEventListener('submit', e => { e.preventDefault(); loadEmbed($('#linkInput').value); });
+{ const saved = store.get('ab_music_link'); if (saved) $('#linkInput').value = saved; }
+renderMusic();
 
 $('#startGo').addEventListener('click', () => { audio(); $('#start').classList.add('hidden'); started = true; resetGame(); });
 const openFaces = () => { refreshPreviews(); $('#faceModal').classList.remove('hidden'); };
