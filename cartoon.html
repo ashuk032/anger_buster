@@ -78,9 +78,9 @@ body.calm .weapons{display:none}
 @keyframes bop{to{transform:translateY(-3px) rotate(-6deg)}}
 
 @media (max-width:440px){
-  .wbtn{width:46px;height:58px;font-size:22px;border-radius:14px}
-  .wbtn small{font-size:10px}
-  .weapons{gap:5px}
+  .wbtn{width:42px;height:58px;font-size:21px;border-radius:14px}
+  .wbtn small{font-size:9px}
+  .weapons{gap:4px}
   .actions{gap:6px;flex-wrap:nowrap}
   .actions .btn{font-size:13px;padding:6px 10px}
 }
@@ -283,6 +283,7 @@ const SFX = {
   pop() { tone('sine', 500, 1100, 0.08, 0.2); },
   win() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, 0.45, 0.22, i * 0.11)); },
   click() { tone('triangle', 900, 1200, 0.05, 0.12); },
+  thunder() { noise(0.12, 1, 'highpass', 4000, 1500); noise(1.6, 0.9, 'lowpass', 1800, 40, 0.05); tone('sine', 120, 30, 1.4, 0.7, 0.04); tone('square', 900, 300, 0.25, 0.08, 0, 40); },
   chime(f) { tone('sine', f, f, 1.8, 0.14); tone('sine', f * 2, f * 2, 1.2, 0.04); }
 };
 
@@ -456,18 +457,20 @@ const WEAPONS = [
   { id: 'chicken', emoji: '🐔', name: 'Chicken', dmg: 6 },
   { id: 'banana', emoji: '🍌', name: 'Banana', dmg: 7 },
   { id: 'chappal', emoji: '🩴', name: 'Chappal', dmg: 8 },
+  { id: 'thunder', emoji: '⚡', name: 'Thunder', dmg: 16 },
   { id: 'nuke', emoji: '☢️', name: 'Nuke', dmg: 30 },
 ];
 let weapon = WEAPONS[0];
 let mode = 'play', started = false, won = false;
-let flash = 0, nukeReady = 0;
+let flash = 0, flashCol = '255,255,240', gloom = 0, storms = [];
+const COOLDOWN = { nuke: 10, thunder: 5 }, ready = { nuke: 0, thunder: 0 };
 let rage = 100, thrown = 0, hits = 0, combo = 0, lastHitT = -9, shake = 0, time = 0, lastThrowT = -9;
 let crossed = new Set();
 let parts = [], projs = [], pending = [];
 const guy = {};
 const girl = { throwT: 0, say: '', sayT: 0, steamT: 0 };
 function resetGuy() {
-  Object.assign(guy, { x: 0, vx: 0, y: 0, vy: 0, a: 0, va: 0, ha: 0, hva: 0, sq: 0, sqv: 0, flail: 0, hurt: 0, dizzy: 0, soot: 0, wet: 0, pie: 0, flash: 0, say: '', sayT: 0, lastLine: '' });
+  Object.assign(guy, { x: 0, vx: 0, y: 0, vy: 0, a: 0, va: 0, ha: 0, hva: 0, sq: 0, sqv: 0, flail: 0, hurt: 0, dizzy: 0, soot: 0, wet: 0, pie: 0, flash: 0, zap: 0, say: '', sayT: 0, lastLine: '' });
 }
 resetGuy();
 
@@ -535,7 +538,7 @@ function addAnger(amount = 10) {
 }
 function resetGame() {
   rage = 100; thrown = 0; hits = 0; combo = 0; won = false; crossed = new Set();
-  parts = []; projs = []; pending = []; resetGuy(); updateHUD();
+  parts = []; projs = []; pending = []; storms = []; resetGuy(); updateHUD();
   $('#winModal').classList.add('hidden');
   toast('Anger Level: 100% 😂');
   setTimeout(() => girlSay('Grrr!! 😤', 1.4), 400);
@@ -560,8 +563,10 @@ function stars(x, y, n) { for (let i = 0; i < n; i++) { const a = rand(0, TAU), 
 function throwAt(tx, ty) {
   if (!started || won || mode !== 'play') return;
   if (time - lastThrowT < 0.16) return;
-  if (weapon.id === 'nuke' && time < nukeReady) { toast('Nuke recharging… ⏳'); return; }
-  if (weapon.id === 'nuke') nukeReady = time + 10;
+  if (COOLDOWN[weapon.id]) {
+    if (time < ready[weapon.id]) { toast(`${weapon.name} recharging… ⏳`); return; }
+    ready[weapon.id] = time + COOLDOWN[weapon.id];
+  }
   lastThrowT = time; thrown++;
   girl.throwT = 1;
   if (Math.random() < 0.12) girlSay(pick(['Take That! 💥', 'Hmph! 😤', 'HIYAA!', 'Catch! 😈']), 1);
@@ -571,6 +576,12 @@ function launch(pd) {
   if (pd.w.id === 'nuke') {
     projs.push({ w: pd.w, x: clamp(pd.tx, girlX() + 130 * S, W - 30), y: -60 * S, vx: 0, vy: 200 * S, g: 900 * S, rot: 0, vr: 0, age: 0 });
     tone('sine', 2000, 380, 1.1, 0.15, 0, 6); girlSay('Special delivery ☢️', 1.4);
+    return;
+  }
+  if (pd.w.id === 'thunder') {
+    storms.push({ w: pd.w, t: 0, struck: false, bolt: null, boltT: 0 });
+    tone('sine', 70, 45, 1.2, 0.5); noise(1.1, 0.25, 'lowpass', 300, 80);
+    girlSay(pick(['Thunder, GO! ⚡', 'Sky, get him! ⛈️', 'ZAP TIME ⚡']), 1.3);
     return;
   }
   const sx = girlX() + 58 * S, sy = groundY - 112 * S;
@@ -633,6 +644,15 @@ function onHit(p, h) {
       guy.vx += 700 * S; guy.vy = 1100 * S; guy.y = Math.max(guy.y, 1); guy.va += 16; guy.hva += 18; guy.soot = 1; guy.dizzy = 4;
       setTimeout(() => guySay(pick(['WHAT WAS THAT?! 😵', 'My eyebrows!! 😭', 'I can hear colours 😵‍💫', 'Is it over?? 🫠']), 2.4), 900);
       break;
+    case 'thunder':
+      SFX.thunder(); shake = 22; flash = 0.9; flashCol = '225,240,255';
+      P('ring', x, y, { life: 0.5, size: 200 * S, color: '#7df9ff' });
+      P('ring', x, y, { life: 0.35, size: 110 * S, color: '#ffe066' });
+      for (let i = 0; i < 16; i++) { const a = rand(0, TAU), sp = rand(150, 380) * S; P('spark', x, y, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60 * S, g: 500 * S, life: rand(0.4, 0.8), size: rand(10, 18) * S, rot: a, color: pick(['#ffe066', '#7df9ff', '#fff']) }); }
+      stars(x, y, 6); comic(x, y - 40 * S, pick(['ZZZAP!', 'KRAKOOM!', 'BZZZT!']), 1.3);
+      guy.vy = 380 * S; guy.y = Math.max(guy.y, 1); guy.va += 6; guy.hva += 12; guy.zap = 1.3; guy.soot = Math.max(guy.soot, 0.8); guy.dizzy = Math.max(guy.dizzy, 2.6);
+      setTimeout(() => guySay(pick(['I feel… tingly ⚡', 'Bzzzt… 🫠', 'My hair is ELECTRIC 😵‍💫', 'Who ordered rain?! ⛈️']), 2.2), 800);
+      break;
     case 'chappal':
       SFX.thwack(); setTimeout(SFX.boing, 120);
       P('ring', x, y, { life: 0.3, size: 70 * S, color: '#ff5fa2' });
@@ -640,7 +660,7 @@ function onHit(p, h) {
       break;
   }
   if (combo >= 3) comic(x + 40 * S, y - 85 * S, `COMBO x${combo}!`, 0.7);
-  if (Math.random() < 0.65 || combo === 1 && hits === 1) guyLine(HIT_LINES);
+  if (id !== 'thunder' && id !== 'nuke' && (Math.random() < 0.65 || combo === 1 && hits === 1)) guyLine(HIT_LINES);
   const dmg = p.w.dmg * (1 + Math.min(combo - 1, 5) * 0.1);
   setRage(rage - dmg);
 }
@@ -671,6 +691,23 @@ function update(dt) {
     if (p.x > W + 80 || p.age > 3) projs.splice(i, 1);
   }
 
+  // thunder storms: cloud gathers over him, then a bolt strikes his head
+  for (let i = storms.length - 1; i >= 0; i--) {
+    const s = storms[i]; s.t += dt;
+    const head = guyPoint(165 * S);
+    s.x = head.x; s.y = Math.max(50 * S, head.y - 230 * S);
+    if (!s.struck && s.t > 0.75) {
+      s.struck = true; s.boltT = 0.4;
+      onHit({ w: s.w }, { x: head.x, y: head.y - 20 * S, head: true });
+    }
+    if (s.struck) {
+      s.boltT -= dt;
+      if (!s.bolt || Math.random() < dt * 25) s.bolt = makeBolt(s.x, s.y + 20 * S, head.x, head.y - 40 * S);
+    }
+    if (s.t > 1.6) storms.splice(i, 1);
+  }
+  gloom += ((storms.length ? 1 : 0) - gloom) * Math.min(1, dt * 6);
+
   // guy ragdoll springs
   guy.va += (-55 * guy.a - 5.5 * guy.va) * dt; guy.a += guy.va * dt; guy.a = clamp(guy.a, -1.45, 1.45);
   guy.hva += (-110 * guy.ha - 6 * guy.hva - guy.va * 2.2) * dt; guy.ha += guy.hva * dt;
@@ -685,6 +722,8 @@ function update(dt) {
     }
   }
   for (const k of ['hurt', 'flash']) guy[k] = Math.max(0, guy[k] - dt * (k === 'flash' ? 5 : 1));
+  guy.zap = Math.max(0, guy.zap - dt);
+  if (guy.zap > 0 && Math.random() < dt * 14) { const b = guyPoint(rand(40, 190) * S); P('spark', b.x + rand(-40, 40) * S, b.y, { vx: rand(-90, 90) * S, vy: rand(-120, -30) * S, life: 0.35, size: rand(8, 13) * S, rot: rand(0, TAU), color: pick(['#ffe066', '#7df9ff']) }); }
   guy.flail = Math.max(0, guy.flail - dt * 0.9);
   guy.dizzy = Math.max(0, guy.dizzy - dt);
   guy.soot = Math.max(0, guy.soot - dt * 0.28);
@@ -718,7 +757,8 @@ function update(dt) {
   }
   parts = parts.filter(p => p.life > 0 && p.y < H + 60);
   shake = Math.max(0, shake - dt * 40); flash = Math.max(0, flash - dt * 1.6);
-  const nb = wbar.querySelector('.wbtn[data-id=nuke]'); if (nb) nb.classList.toggle('cd', time < nukeReady);
+  if (flash <= 0) flashCol = '255,255,240';
+  for (const id in COOLDOWN) { const b = wbar.querySelector(`.wbtn[data-id=${id}]`); if (b) b.classList.toggle('cd', time < ready[id]); }
 }
 
 /* ---------------- drawing helpers ---------------- */
@@ -878,6 +918,7 @@ function drawGuy() {
   const nervous = mode === 'play' && !won && rage > 35 && guy.hurt <= 0;
   ctx.fillStyle = 'rgba(43,29,58,.15)'; ctx.beginPath(); ctx.ellipse(f.x, groundY + 3, 48 * S * (1 - Math.min(0.6, guy.y / (500 * S))), 9 * S, 0, 0, TAU); ctx.fill();
   ctx.save(); ctx.translate(f.x, f.y);
+  if (guy.zap > 0) ctx.translate(rand(-4, 4) * S * guy.zap, rand(-3, 3) * S * guy.zap);
   ctx.rotate(guy.a + (nervous ? Math.sin(time * 30) * 0.012 : Math.sin(time * 1.5) * 0.025));
   ctx.scale(1 - guy.sq * 0.5, 1 + guy.sq);
   // legs
@@ -902,8 +943,14 @@ function drawGuy() {
   // head
   ctx.save(); ctx.translate(0, -128 * S); ctx.rotate(guy.ha); ctx.translate(0, -44 * S);
   ctx.save(); const sq = guy.sq * 0.8; ctx.scale(1 + sq, 1 - sq);
-  // smoky afro after a bomb
-  if (guy.soot > 0.15) {
+  // zapped: hair stands straight up
+  if (guy.zap > 0) {
+    ctx.strokeStyle = INK; ctx.lineWidth = 4 * S; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let i = -3; i <= 3; i++) {
+      const bx = i * 10 * S, a = i * 0.28, L = (26 + Math.sin(time * 40 + i) * 4) * S;
+      ctx.beginPath(); ctx.moveTo(bx, -40 * S); ctx.lineTo(bx + Math.sin(a) * L * 0.5 + 4 * S, -40 * S - L * 0.5); ctx.lineTo(bx + Math.sin(a) * L, -40 * S - L); ctx.stroke();
+    }
+  } else if (guy.soot > 0.15) { // smoky afro after a bomb
     ctx.globalAlpha = Math.min(1, guy.soot * 1.5);
     ctx.fillStyle = '#4a3f45';
     for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc((-36 + i * 12) * S, (-44 - Math.sin(i * 1.3) * 8) * S, 15 * S, 0, TAU); ctx.fill(); }
@@ -948,6 +995,45 @@ function drawProjectiles() {
   }
 }
 
+function makeBolt(x0, y0, x1, y1) {
+  const pts = [[x0, y0]], n = 7;
+  for (let i = 1; i < n; i++) { const k = i / n; pts.push([lerp(x0, x1, k) + rand(-28, 28) * S, lerp(y0, y1, k)]); }
+  pts.push([x1, y1]);
+  const bi = 2 + Math.floor(Math.random() * 3), [bx, by] = pts[bi];
+  const branch = [[bx, by], [bx + rand(25, 50) * S * (Math.random() < 0.5 ? -1 : 1), by + rand(30, 55) * S]];
+  return { pts, branch };
+}
+function boltPath(pts) { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); }
+function drawStorms() {
+  for (const s of storms) {
+    if (s.x == null) continue;
+    const grow = Math.min(1, s.t / 0.35), fade = s.t > 1.25 ? Math.max(0, 1 - (s.t - 1.25) / 0.35) : 1;
+    // bolt
+    if (s.struck && s.boltT > 0 && s.bolt && Math.sin(time * 70) > -0.6) {
+      ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      for (const [pts, wd] of [[s.bolt.pts, 1], [s.bolt.branch, 0.55]]) {
+        ctx.strokeStyle = INK; ctx.lineWidth = 15 * S * wd; boltPath(pts); ctx.stroke();
+        ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 9 * S * wd; boltPath(pts); ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * S * wd; boltPath(pts); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // grumpy storm cloud
+    ctx.save(); ctx.globalAlpha = fade; ctx.translate(s.x, s.y); ctx.scale(grow, grow);
+    const wob = Math.sin(time * 14) * 2 * S;
+    ctx.fillStyle = INK; cloud(-35 * S - 4 * S, wob + 2 * S, 1.12 * S, INK);
+    cloud(-35 * S, wob, 1.05 * S, s.struck && s.boltT > 0 ? '#8d86a8' : '#5c5470');
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * S; ctx.lineCap = 'round';
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 16 * S, wob - 8 * S); ctx.lineTo(d * 5 * S, wob - 3 * S); ctx.stroke(); }
+    ctx.fillStyle = '#fff';
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.arc(d * 10 * S, wob + 3 * S, 3.2 * S, 0, TAU); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(0, wob + 16 * S, 6 * S, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+    ctx.restore();
+    // rain drops under the cloud
+    if (s.t < 1.3 && Math.random() < 0.6) P('drop', s.x + rand(-45, 45) * S, s.y + 25 * S, { vy: 520 * S, g: 600 * S, life: 0.4, size: rand(2.5, 4) * S });
+  }
+}
+
 function drawParticles() {
   for (const p of parts) {
     const k = 1 - p.life / p.max, a = Math.min(1, p.life / p.max * 2.5);
@@ -959,6 +1045,13 @@ function drawParticles() {
       case 'drop': ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fillStyle = '#4dabf7'; ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.3, 0, TAU); ctx.fill(); break;
       case 'cream': ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fillStyle = '#fffaf0'; ctx.fill(); ctx.lineWidth = 2 * S; ctx.strokeStyle = INK; ctx.stroke(); break;
       case 'feather': ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath(); ctx.ellipse(0, 0, p.size * 1.4, p.size * 0.5, 0, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2 * S; ctx.strokeStyle = INK; ctx.stroke(); ctx.beginPath(); ctx.moveTo(-p.size * 1.4, 0); ctx.lineTo(p.size * 1.4, 0); ctx.stroke(); break;
+      case 'spark': {
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot); const z = p.size;
+        ctx.beginPath(); ctx.moveTo(-z, 0); ctx.lineTo(-z * 0.3, -z * 0.35); ctx.lineTo(z * 0.2, z * 0.3); ctx.lineTo(z, 0);
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.lineWidth = 6 * S; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = 3 * S; ctx.strokeStyle = p.color; ctx.stroke();
+        break;
+      }
       case 'confetti': ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); break;
       case 'heart': ctx.globalAlpha = Math.min(1, p.life * 1.5); heart(p.x, p.y, p.size * (0.8 + Math.sin(time * 6 + p.size) * 0.08)); break;
       case 'steam': ctx.globalAlpha = (1 - k) * 0.85; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.6 + k), 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2 * S; ctx.strokeStyle = 'rgba(43,29,58,.5)'; ctx.stroke(); break;
@@ -989,12 +1082,13 @@ function render() {
   if (mode === 'calm') drawCalmBG(); else drawPlayBG();
   const back = parts.filter(p => p.kind === 'bubble' || p.kind === 'petal');
   const front = parts.filter(p => p.kind !== 'bubble' && p.kind !== 'petal');
+  if (gloom > 0.01) { ctx.fillStyle = `rgba(40,30,80,${gloom * 0.35})`; ctx.fillRect(-40, -40, W + 80, H + 80); }
   parts = back; drawParticles();
-  drawGirl(); drawGuy(); drawProjectiles();
+  drawGirl(); drawGuy(); drawStorms(); drawProjectiles();
   parts = front; drawParticles();
   parts = back.concat(front);
   ctx.restore();
-  if (flash > 0) { ctx.fillStyle = `rgba(255,255,240,${Math.min(1, flash) * 0.9})`; ctx.fillRect(0, 0, W, H); }
+  if (flash > 0) { ctx.fillStyle = `rgba(${flashCol},${Math.min(1, flash) * 0.9})`; ctx.fillRect(0, 0, W, H); }
 }
 
 let last = performance.now();
@@ -1042,7 +1136,7 @@ function setMode(m) {
   mode = m;
   document.body.classList.toggle('calm', m === 'calm');
   $('#coolBtn').textContent = m === 'calm' ? '💣 Back to Busting' : '🌸 Cool Down Mode';
-  projs = []; pending = [];
+  projs = []; pending = []; storms = [];
   parts = parts.filter(p => p.kind !== 'bubble' && p.kind !== 'petal' && p.kind !== 'steam');
   layout();
   if (m === 'calm') {
